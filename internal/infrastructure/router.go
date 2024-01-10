@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"time"
 
@@ -66,18 +67,22 @@ func isValidToken() gin.HandlerFunc {
 
 		cookies := []*http.Cookie{}
 		cookie := &http.Cookie{
-			Name:   "TASTE_OF_COOKIE",
-			Value:  "VERY_DELICIOUS",
+			Name:   "access_token",
+			Value:  token,
 			Path:   "/",
-			Domain: "localhost",
+			Domain: ".",
 		}
 		cookies = append(cookies, cookie)
+		u, _ := url.Parse("http://${SERVER}/api/admin/user")
 		jar.SetCookies(u, cookies)
 
 		client := &http.Client{Jar: jar}
-
 		resp, err := client.Get("http://${SERVER}/api/admin/user")
 		if err != nil {
+			panic(err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
 			panic(err)
 		}
 
