@@ -6,6 +6,7 @@ services:
     ports:
       - "7777:7777"
     environment:
+      AUTH_SERVER_URL: "http://127.0.0.1:9999"
       WEB_SERVER_ORIGIN: "http://127.0.0.1"
       WEB_SERVER_ORIGIN_LOCAL: "http://127.0.0.1:3000"
     restart: always

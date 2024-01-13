@@ -48,10 +48,20 @@ func NewRouter() *Router {
 	return &Router{router: router}
 }
 
+func (r *Router) Run() {
+	err := r.router.Run(listenPort)
+	if err != nil {
+		panic("Error while running server")
+	}
+}
+
 func isValidToken() gin.HandlerFunc {
+	auth_server_url := os.Getenv("AUTH_SERVER_URL")
+
 	return func(c *gin.Context) {
 		token, err := c.Cookie(tokenCookieName)
 		if err != nil {
+			println(err.Error())
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is required"})
 			c.Abort()
 			return
@@ -60,30 +70,43 @@ func isValidToken() gin.HandlerFunc {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			println(err.Error())
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token validation failed"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Create cookie jar error"})
 			c.Abort()
 			return
 		}
 
 		cookies := []*http.Cookie{}
 		cookie := &http.Cookie{
-			Name:   "access_token",
-			Value:  token,
-			Path:   "/",
-			Domain: ".",
+			Name:  tokenCookieName,
+			Value: token,
+			Path:  "/",
 		}
 		cookies = append(cookies, cookie)
-		u, _ := url.Parse("http://${SERVER}/api/admin/user")
+		u, _ := url.Parse(auth_server_url + "/api/admin/user")
 		jar.SetCookies(u, cookies)
 
 		client := &http.Client{Jar: jar}
-		resp, err := client.Get("http://${SERVER}/api/admin/user")
+
+		req, err := http.NewRequest("GET", auth_server_url+"/api/admin/user", nil)
 		if err != nil {
-			panic(err)
+			println(err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Create request error"})
+			c.Abort()
+			return
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			println(err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Can not connect to auth server"})
+			c.Abort()
+			return
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			panic(err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
 		}
 
 		c.Next()
