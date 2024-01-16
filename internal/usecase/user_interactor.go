@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,25 +17,47 @@ func NewUserInteractor() *UserInteractor {
 	return &UserInteractor{}
 }
 
-func (interactor *UserInteractor) GetUsers() []*model.User {
+func openDummyFile() ([]*model.User, error) {
 	jsonFile, err := os.Open("dummy_people.json")
 	if err != nil {
-		fmt.Println("Can not open dummy data file")
-		return nil
+		msg := "Can not open dummy data file"
+		fmt.Println(msg)
+		return nil, errors.New(msg)
 	}
 
 	jsonData, err := io.ReadAll(jsonFile)
 	if err != nil {
-		fmt.Println("Can not read dummy data file")
-		return nil
+		msg := "Can not read dummy data file"
+		fmt.Println(msg)
+		return nil, errors.New(msg)
 	}
 
 	users := make([]*model.User, 0)
 	err = json.Unmarshal(jsonData, &users)
 	if err != nil {
-		fmt.Println("Can not unmarshal dummy data file")
-		return nil
+		msg := "Can not unmarshal dummy data file"
+		fmt.Println(msg)
+		return nil, errors.New(msg)
 	}
 
-	return users
+	return users, nil
+}
+
+func (interactor *UserInteractor) GetUsers() ([]*model.User, error) {
+	return openDummyFile()
+}
+
+func (interactor *UserInteractor) DeleteUser(username string) error {
+	users, err := openDummyFile()
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if user.Username == username {
+			return nil
+		}
+	}
+
+	return errors.New("User not found")
 }

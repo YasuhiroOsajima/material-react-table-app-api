@@ -29,6 +29,7 @@ func NewRouter() *Router {
 		AllowMethods: []string{
 			"POST",
 			"GET",
+			"DELETE",
 			"OPTIONS",
 		},
 		AllowHeaders: []string{
@@ -44,6 +45,7 @@ func NewRouter() *Router {
 	api.Use(isValidToken())
 
 	api.GET("/users", func(c *gin.Context) { userCtrl.GetUsers(c) })
+	api.DELETE("/users/:username", func(c *gin.Context) { userCtrl.DeleteUser(c) })
 
 	return &Router{router: router}
 }
